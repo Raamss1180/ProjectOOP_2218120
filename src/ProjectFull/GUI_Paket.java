@@ -4,10 +4,15 @@
  */
 package ProjectFull;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.DefaultTableModel;
 
 public class GUI_Paket extends javax.swing.JFrame {
@@ -17,23 +22,175 @@ public class GUI_Paket extends javax.swing.JFrame {
      */
     public GUI_Paket() {
         initComponents();
+        cmbNama.setSelectedItem(null);
         cmbPaket.setSelectedItem(null);
         cmbKelas.setSelectedItem(null);
         cmbJurusan.setSelectedItem(null);
-        DefaultTableModel dataModel = (DefaultTableModel) tableInfo.getModel();
-        int rowCount = dataModel.getRowCount();
-        while(rowCount > 0){
-            dataModel.removeRow(rowCount - 1);
-            rowCount = dataModel.getRowCount();
-        }
+        tampil();
+        tampil_akun();
     }
     public void clear(){
-            txtNama.setText("");
-            cmbPaket.getSelectedIndex();
-            cmbJurusan.getSelectedIndex();
-            cmbKelas.getSelectedIndex();
+            cmbPaket.setSelectedItem(null);
+            cmbJurusan.setSelectedItem(null);
+            cmbKelas.setSelectedItem(null);
+    }
+    //masukkan conection (public Connection conn;)
+    public Connection conn;
+    
+    String nama, pkt, kls, jurus;
+    
+    //masukkan method itempilih()
+    void itempilih() {
+        cmbNama.setSelectedItem(nama);
+        cmbPaket.setSelectedItem(pkt);
+        cmbKelas.setSelectedItem(kls);
+        cmbJurusan.setSelectedItem(jurus);
+    }
+    
+    //masukkan method koneksi()
+    public void koneksi() throws SQLException {
+        try {
+            conn = null;
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/OOP_2218120?user=root&password=");
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(GUI_Paket.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException e) {
+            Logger.getLogger(GUI_Paket.class.getName()).log(Level.SEVERE, null, e);
+        } catch (Exception es) {
+            Logger.getLogger(GUI_Paket.class.getName()).log(Level.SEVERE, null, es);
+        }
+    }
+     //masukka method tampil_akun() dibawah sini
+    public void tampil_akun() {
+        try {
+            koneksi();
+            String sql = "SELECT username FROM tb_akun order by username asc";
+            Statement stt = conn.createStatement();
+            ResultSet res = stt.executeQuery(sql);
+            while (res.next()) {
+                Object[] ob = new Object[3];
+                ob[0] = res.getString(1);
+                cmbNama.addItem((String) ob[0]);
+            }
+            res.close();
+            stt.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+     //masukkan method tampil()
+    public void tampil() {
+        DefaultTableModel tabelhead = new DefaultTableModel();
+        tabelhead.addColumn("Nama");
+        tabelhead.addColumn("Paket");
+        tabelhead.addColumn("Kelas");
+        tabelhead.addColumn("Jurusan");
+        try {
+            koneksi();
+            String sql = "SELECT * FROM tb_paket";
+            Statement stat = conn.createStatement();
+            ResultSet res = stat.executeQuery(sql);
+            while (res.next()) {
+                tabelhead.addRow(new Object[]{res.getString(2), res.getString(3), res.getString(4), res.getString(5),});
+            }
+            tableInfo.setModel(tabelhead);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "BELUM TERKONEKSI");
+        }
     }
 
+    //masukkan method refresh()
+    public void refresh() {
+        new GUI_Paket().setVisible(true);
+        this.setVisible(false);
+    }
+    //masukkan method insert()
+    public void insert() {
+        String Nama = (String) cmbNama.getSelectedItem();
+        String Paket = (String) cmbPaket.getSelectedItem();
+        String Kelas = (String) cmbKelas.getSelectedItem();
+        String Jurus = (String) cmbJurusan.getSelectedItem();
+        try {
+            koneksi();
+            Statement statement = conn.createStatement();
+            statement.executeUpdate("INSERT INTO tb_nilai(nama, paket, kelas, jurusan)"
+                    + "VALUES('" + Nama + "','" + Paket + "','" + Kelas + "','" + Jurus + "')");
+            statement.close();
+            JOptionPane.showMessageDialog(null, "Berhasil Memasukan Data Nilai!");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Terjadi Kesalahan Input!");
+        }
+        refresh();
+    }
+    
+    //masukkan method update()  
+    public void update() {
+        String Nama = (String) cmbNama.getSelectedItem();
+        String Paket = (String) cmbPaket.getSelectedItem();
+        String Kelas = (String) cmbKelas.getSelectedItem();
+        String Jurus = (String) cmbJurusan.getSelectedItem();
+
+        String namaLama = nama;
+        try {
+            Statement statement = conn.createStatement();
+            statement.executeUpdate("UPDATE tb_paket SET nama='" + Nama + "'," + "paket='" + Paket + "'"
+                    + ",kelas='" + Kelas + "',jurusan='" + Jurus + "' WHERE nama='" + namaLama + "'");
+            statement.close();
+            conn.close();
+            JOptionPane.showMessageDialog(null, "Data Paket DI Update!");
+        } catch (Exception e) {
+            System.out.println("Error : " + e);
+        }
+        refresh();
+    }
+
+    //masukkan method batal()
+    public void batal() {
+        cmbNama.setSelectedItem(null);
+        cmbPaket.setSelectedItem(null);
+        cmbKelas.setSelectedItem(null);
+        cmbJurusan.setSelectedItem(null);
+    }
+    
+    //masukkan method delete()
+    public void delete() {
+        int ok = JOptionPane.showConfirmDialog(null, "Apakah Anda yakin akan menghapus data ?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+        if (ok == 0) {
+            try {
+                String sql = "DELETE FROM tb_paket WHERE nama='" + cmbNama.getSelectedItem() + "'";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.executeUpdate();
+                JOptionPane.showMessageDialog(null, "Data Berhasil di hapus");
+//                batal();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Data gagal di hapus");
+            }
+        }
+        refresh();
+    }
+
+    //masukkan method cari()
+    public void cari() {
+        try {
+            try ( Statement statement = conn.createStatement()) {
+                String sql = "SELECT * FROM tb_paket WHERE `nama` LIKE '%" + txtCari.getText() + "%'";
+                ResultSet rs = statement.executeQuery(sql);
+                //menampilkan data dari sql query
+                if (rs.next()) // .next() = scanner method
+                {
+                    cmbNama.setSelectedItem(rs.getString(2));
+                    cmbPaket.setSelectedItem(rs.getString(3));
+                    cmbKelas.setSelectedItem(rs.getString(4));
+                    cmbJurusan.setSelectedItem(rs.getString(5));
+                } else {
+                    JOptionPane.showMessageDialog(null, "Data yang Anda cari tidak ada");
+                }
+            }
+        } catch (Exception ex) {
+            System.out.println("Error." + ex);
+        }
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -45,9 +202,7 @@ public class GUI_Paket extends javax.swing.JFrame {
 
         jLabel1 = new javax.swing.JLabel();
         btnCetak = new javax.swing.JButton();
-        jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        txtNama = new javax.swing.JTextField();
         cmbPaket = new javax.swing.JComboBox<>();
         jLabel4 = new javax.swing.JLabel();
         cmbKelas = new javax.swing.JComboBox<>();
@@ -58,6 +213,10 @@ public class GUI_Paket extends javax.swing.JFrame {
         btnHapus = new javax.swing.JButton();
         btnBatal = new javax.swing.JButton();
         btnClose = new javax.swing.JButton();
+        cmbNama = new javax.swing.JComboBox<>();
+        txtCari = new javax.swing.JTextField();
+        btnSearch = new javax.swing.JButton();
+        btnNama = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -70,8 +229,6 @@ public class GUI_Paket extends javax.swing.JFrame {
                 btnCetakActionPerformed(evt);
             }
         });
-
-        jLabel2.setText("Nama");
 
         jLabel3.setText("Paket Bimbel");
 
@@ -104,6 +261,11 @@ public class GUI_Paket extends javax.swing.JFrame {
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
+            }
+        });
+        tableInfo.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tableInfoMouseClicked(evt);
             }
         });
         tableInfo.addComponentListener(new java.awt.event.ComponentAdapter() {
@@ -143,6 +305,20 @@ public class GUI_Paket extends javax.swing.JFrame {
             }
         });
 
+        btnSearch.setText("Search 🔍");
+        btnSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSearchActionPerformed(evt);
+            }
+        });
+
+        btnNama.setText("Nama");
+        btnNama.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnNamaActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -155,31 +331,36 @@ public class GUI_Paket extends javax.swing.JFrame {
                         .addComponent(cmbKelas, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGroup(layout.createSequentialGroup()
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                    .addComponent(jLabel3)
-                                    .addGap(18, 18, 18))
-                                .addGroup(layout.createSequentialGroup()
-                                    .addComponent(jLabel2)
-                                    .addGap(56, 56, 56)))
+                                .addComponent(jLabel3)
+                                .addComponent(btnNama))
+                            .addGap(18, 18, 18)
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(txtNama, javax.swing.GroupLayout.DEFAULT_SIZE, 90, Short.MAX_VALUE)
-                                .addComponent(cmbPaket, 0, 1, Short.MAX_VALUE))))
+                                .addComponent(cmbPaket, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(cmbNama, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(cmbJurusan, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(btnCetak)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnHapus)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(btnCetak)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnHapus)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnBatal)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnClose))
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 674, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnBatal)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnClose))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 674, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(btnSearch)
+                        .addGap(14, 14, 14))))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel1)
@@ -191,12 +372,16 @@ public class GUI_Paket extends javax.swing.JFrame {
                 .addGap(12, 12, 12)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnSearch))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(cmbNama, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnNama)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel2)
-                            .addComponent(txtNama, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel3)
                             .addComponent(cmbPaket, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -207,86 +392,24 @@ public class GUI_Paket extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel5)
-                            .addComponent(cmbJurusan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnCetak)
-                    .addComponent(btnHapus)
-                    .addComponent(btnBatal)
-                    .addComponent(btnClose))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(cmbJurusan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 32, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(btnCetak)
+                            .addComponent(btnHapus)
+                            .addComponent(btnBatal)
+                            .addComponent(btnClose))
+                        .addGap(18, 18, 18))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCetakActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCetakActionPerformed
-         // Menampilkan pesan dialog bahwa data telah ditambahkan ketabel
-        JOptionPane.showMessageDialog(null, "Data anda Ditambahkan Ke tabel");
-        // Mengambil model data dari tabel
-        DefaultTableModel dataModel = (DefaultTableModel)tableInfo.getModel();
-        // Inisialisasi sebuah ArrayList bernama 'list'
-        List list = new ArrayList<>();
-        // Mengatur tabel untuk membuat kolom dari model secara otomatis
-        tableInfo.setAutoCreateColumnsFromModel(true);
-        
-        // Membuat instance dari class paket
-        paket pkt = new paket();
-        
-        pkt.setUsername (txtNama.getText());//inheritance dari class infoData
-        switch (cmbPaket.getSelectedIndex()) {//pilihan untuk paket belajar
-            case 0 -> {
-                pkt.setPaket("Persiapan UTBK");
-            }case 1 -> {
-                pkt.setPaket("Pendalaman Materi");
-            }case 2 -> {
-                pkt.setPaket("Mengerjakan PR");
-            }
-        }
-        
-        switch (cmbKelas.getSelectedIndex()) {//pilihan untuk kelas dari murid
-            case 0 -> {
-                pkt.setKelas(10);
-            }case 1 -> {
-                pkt.setKelas(11);
-            }case 2 -> {
-                pkt.setKelas(12);
-            }
-        }
-        
-        switch (cmbJurusan.getSelectedIndex()) {//pilihan untuk jurusan yang ditemmpati oleh murid
-            case 0 -> {
-                pkt.setJurusan("IPA");
-            }case 1 -> {
-                pkt.setJurusan("IPS");
-            }case 2 -> {
-                pkt.setJurusan("BAHASA");
-            }
-        }
-        
-        switch (cmbPaket.getSelectedIndex()) {//Harga Paket yang Diambil oleh murid
-            case 0 -> {
-                pkt.setHarga(100000);
-            }case 1 -> {
-                pkt.setHarga(50000);
-            }case 2 -> {
-                pkt.setHarga(10000);
-            }
-        }
-        // Menambahkan data-data dari objek paket ke dalamArrayList 'list'
-        list.add(pkt.getcetakUsername());
-        list.add(pkt.paketBimbel());
-        list.add(pkt.Kelas());
-        list.add(pkt.Jurusan());
-        list.add(pkt.cetakHarga());
-        list.add(pkt.Diskon());
-        list.add(pkt.LamaKursus());
-        
-        // Menambahkan baris baru ke model tabel menggunakan data dari ArrayList 'list'
-        dataModel.addRow(list.toArray());
-        // Memanggil fungsi 'clear' untuk membersihkan nilai dari komponen
-        clear();
+        insert();
     }//GEN-LAST:event_btnCetakActionPerformed
 
     private void cmbPaketItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cmbPaketItemStateChanged
@@ -298,24 +421,39 @@ public class GUI_Paket extends javax.swing.JFrame {
     }//GEN-LAST:event_tableInfoComponentHidden
 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
-        // TODO add your handling code here:
-        DefaultTableModel dataModel = (DefaultTableModel) tableInfo.getModel();
-        int rowCount = dataModel.getRowCount();
-        while(rowCount > 0){
-            dataModel.removeRow(rowCount - 1);
-            rowCount = dataModel.getRowCount();
-        }
+        
     }//GEN-LAST:event_btnHapusActionPerformed
-
-    private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
-        // TODO add your handling code here:
-        clear();
-    }//GEN-LAST:event_btnBatalActionPerformed
 
     private void btnCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCloseActionPerformed
         // TODO add your handling code here:
         dispose();
     }//GEN-LAST:event_btnCloseActionPerformed
+
+    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+        // TODO add your handling code here:
+        //  masukkan method cari()
+        cari();
+    }//GEN-LAST:event_btnSearchActionPerformed
+
+    private void btnNamaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNamaActionPerformed
+        // TODO add your handling code here:
+        new GUI_Akun().setVisible(true);
+    }//GEN-LAST:event_btnNamaActionPerformed
+
+    private void tableInfoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableInfoMouseClicked
+        // TODO add your handling code here:
+        int tabel = tableInfo.getSelectedRow(); //0
+        nama = tableInfo.getValueAt(tabel, 0).toString();
+        pkt = tableInfo.getValueAt(tabel, 1).toString();
+        kls = tableInfo.getValueAt(tabel, 2).toString();
+        jurus = tableInfo.getValueAt(tabel, 3).toString();
+        itempilih();
+    }//GEN-LAST:event_tableInfoMouseClicked
+
+    private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
+        // TODO add your handling code here:
+        clear();
+    }//GEN-LAST:event_btnBatalActionPerformed
 
     /**
      * @param args the command line arguments
@@ -357,16 +495,18 @@ public class GUI_Paket extends javax.swing.JFrame {
     private javax.swing.JButton btnCetak;
     private javax.swing.JButton btnClose;
     private javax.swing.JButton btnHapus;
+    private javax.swing.JButton btnNama;
+    private javax.swing.JButton btnSearch;
     private javax.swing.JComboBox<String> cmbJurusan;
     private javax.swing.JComboBox<String> cmbKelas;
+    private javax.swing.JComboBox<String> cmbNama;
     private javax.swing.JComboBox<String> cmbPaket;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable tableInfo;
-    private javax.swing.JTextField txtNama;
+    private javax.swing.JTextField txtCari;
     // End of variables declaration//GEN-END:variables
 }

@@ -47,7 +47,7 @@ public class paket extends infoData implements Waktu{
     @Override
     public String LamaKursus(){
         String ket = null;
-        if(paketBimbel().equals("Persiapan UTBK")){
+        if(paketBimbel() == ("Persiapan UTBK")){
             if(Kelas() == 10){
                 ket = "2 Setengah thn";
             }else if(Kelas() == 11){

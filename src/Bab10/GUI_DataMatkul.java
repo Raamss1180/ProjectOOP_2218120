@@ -367,7 +367,7 @@ public class GUI_DataMatkul extends javax.swing.JFrame {
                     .addComponent(btnBatal))
                 .addGap(18, 18, 18)
                 .addComponent(btnNilai)
-                .addContainerGap(79, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
